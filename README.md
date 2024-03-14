@@ -24,4 +24,7 @@ TODO
 # File Manifest
 This project contains many parts which can be run independantly, or together. The following manifest will outline the different files in the application. This will include detailed descriptions of each file, which will detail their functions and use cases.
 
-TODO
+- `extract.py`: This file is used for the preprocessing and extraction of features in the audio files. The specified features and extracted and saved into an output file for later use.
+- `gradient.py`: This file contains the functions for the implementation of the gradient descent algorithm.
+- `logreg.py`: This file contains the functions for the implementation of the logistic regression model.
+- `utils.py`: This file contains useful utility functions that are used throughout the program.
