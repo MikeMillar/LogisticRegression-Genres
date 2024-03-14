@@ -142,7 +142,7 @@ def extract_mfcc(waveforms, sample_rates):
         [float]: array of MFCC minimum values.
         [float]: array of MFCC maximum values.
     """
-    
+
     # initialize return arrays
     mfcc_sums = []
     mfcc_means = []
@@ -175,6 +175,62 @@ def extract_mfcc(waveforms, sample_rates):
     # return all mfcc aggregrated statistics
     return mfcc_sums, mfcc_means, mfcc_stds, mfcc_mins, mfcc_maxs
 
+
+
+def extract_spectral_contrast(waveforms, sample_rates):
+    """
+    Analyzes the Spectral Constrast (SC) for each waveform.
+    Spectral contrast produces a matrix of coefficients which we 
+    aggregate using a number of statistics and reduce to several
+    aggregated statistics. These statistics include sum, mean,
+    standard deviation, min, and max values.
+
+    Args:
+        waveforms (np.ndarray): audio time series
+        sample_rates (np.ndarray): audio sample rates
+
+    Returns:
+        [float]: array of SC values summed.
+        [float]: array of SC values means.
+        [float]: array of SC standard deviations.
+        [float]: array of SC minimum values.
+        [float]: array of SC maximum values.
+    """
+
+    # initialize return variables
+    sc_sums = []
+    sc_means = []
+    sc_stds = []
+    sc_mins = []
+    sc_maxs = []
+    # loop over all wave forms
+    for i in range(len(waveforms)):
+        # compute spectral contrast
+        contrasts = librosa.feature.spectral_contrast(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size)
+        # initialize aggregator variables
+        sums = []
+        means = []
+        stds = []
+        mins = []
+        maxs = []
+        # Loop over constract matrix to get aggregate stats
+        for j in range(len(contrasts)):
+            sums.append(np.sum(contrasts[j]))
+            means.append(np.mean(contrasts[j]))
+            stds.append(np.std(contrasts[j]))
+            mins.append(np.min(contrasts[j]))
+            maxs.append(np.max(contrasts[j]))
+        # accumulate results
+        sc_sums.append(np.mean(sums))
+        sc_means.append(np.mean(means))
+        sc_stds.append(np.mean(stds))
+        sc_mins.append(np.min(mins))
+        sc_maxs.append(np.max(maxs))
+    # return spectral contrast stats
+    return sc_sums, sc_means, sc_stds, sc_mins, sc_maxs
+
+
+
 if __name__ == '__main__':
     # Check if testing mode is on
     if test:
@@ -183,13 +239,15 @@ if __name__ == '__main__':
         # get tempo (bpm)
         tempo, beat_frames = extract_beat([y], [sr])
         # Get aggregate MFCC features
-        mfcc_sums, mfcc_means, mfcc_stds, mfcc_mins, mfcc_maxs = extract_mfcc([y], [sr])
+        # mfcc_sums, mfcc_means, mfcc_stds, mfcc_mins, mfcc_maxs = extract_mfcc([y], [sr])
+        extract_spectral_contrast(y, sr)
     else:
         filenames = get_audio_filenames(train_dir)
         labels = extract_labels(filenames)
         waveforms, sample_rates = load_audio_files(filenames)
         tempos, beat_frames = extract_beat(waveforms, sample_rates)
         mfcc_sums, mfcc_means, mfcc_stds, mfcc_mins, mfcc_maxs = extract_mfcc(waveforms, sample_rates)
+        sc_sums, sc_means, sc_stds, sc_mins, sc_maxs = extract_spectral_contrast(waveforms, sample_rates)
         audio_data = {
             'file': filenames,
             'bpm': tempos,
@@ -198,6 +256,11 @@ if __name__ == '__main__':
             'mfcc_std': mfcc_stds,
             'mfcc_min': mfcc_mins,
             'mfcc_max': mfcc_maxs,
+            'sc_sum': sc_sums,
+            'sc_mean': sc_means,
+            'sc_std': sc_stds,
+            'sc_min': sc_mins,
+            'sc_max': sc_maxs,
             'label': labels
         }
         df = pd.DataFrame(audio_data)
