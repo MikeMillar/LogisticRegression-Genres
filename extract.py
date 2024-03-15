@@ -1,6 +1,7 @@
 # Import required libraries
 import numpy as np
 import pandas as pd
+from sklearn.decomposition import PCA
 # Import OS to read files from directories
 import os
 # Imports for Audio Processing
@@ -14,7 +15,7 @@ test_dir = 'data/test/'
 test_path = 'data/train/blues/blues.00000.au'
 
 # Configuration Variables
-test = False   # If test is set to true, run on single audio file described above
+test = True   # If test is set to true, run on single audio file described above
 hop_size = 512 # Step size of the audio, 512 ~= 23ms
 mfcc_count = 13 # Total number of MFCC's to return
 
@@ -128,8 +129,8 @@ def extract_mfcc(waveforms, sample_rates):
     Analyzes the Mel Frequency Cepstral Coefficients (MFCC) for each
     waveform. MFCC produces a matrix of coefficients which we 
     aggregate using a number of statistics and reduce to several
-    aggregated statistics. These statistics include sum, mean,
-    standard deviation, min, and max values.
+    aggregated statistics. Use PCA to reduce the MFCC matrix down
+    to single dimensional vectors.
 
     Args:
         waveforms (np.ndarray): audio time series
@@ -141,39 +142,30 @@ def extract_mfcc(waveforms, sample_rates):
         [float]: array of MFCC standard deviations.
         [float]: array of MFCC minimum values.
         [float]: array of MFCC maximum values.
+        [np.array]: array of MFCC matrices reduced to 1 dimensional vectors
     """
-
-    # initialize return arrays
+    
     mfcc_sums = []
     mfcc_means = []
     mfcc_stds = []
     mfcc_mins = []
     mfcc_maxs = []
-    # Loop through all waveforms
+    mfcc_vectors = []
+    # Compute MFCC for all waveforms
     for i in range(len(waveforms)):
-        # Get the MFCCs
-        mfcc = librosa.feature.mfcc(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size, n_mfcc=mfcc_count)
-        # initialize per file arrays
-        sums = []
-        means = []
-        stds = []
-        mins = []
-        maxs = []
-        # aggregate statistics of each MFCC window
-        for j in range(len(mfcc)):
-            sums.append(np.sum(mfcc[j]))
-            means.append(np.mean(mfcc[j]))
-            stds.append(np.std(mfcc[j]))
-            mins.append(np.min(mfcc[j]))
-            maxs.append(np.max(mfcc[j]))
-        # aggreate statistics of all MFCC windows
-        mfcc_sums.append(np.mean(sums))
-        mfcc_means.append(np.mean(means))
-        mfcc_stds.append(np.mean(stds))
-        mfcc_mins.append(np.min(mins))
-        mfcc_maxs.append(np.max(maxs))
-    # return all mfcc aggregrated statistics
-    return mfcc_sums, mfcc_means, mfcc_stds, mfcc_mins, mfcc_maxs
+        # Compute MFCC matrix
+        mfcc_matrix = librosa.feature.mfcc(y=waveforms, sr=sample_rates, hop_length=hop_size, n_mfcc=mfcc_count)
+        # Flatten matrix to obtain aggregate statistics
+        mfcc_flatten = mfcc_matrix.flatten()
+        mfcc_sums.append(np.sum(mfcc_flatten))
+        mfcc_means.append(np.mean(mfcc_flatten))
+        mfcc_stds.append(np.std(mfcc_flatten))
+        mfcc_mins.append(np.min(mfcc_flatten))
+        mfcc_maxs.append(np.max(mfcc_flatten))
+        # Perform PCA to reduce MFCC matrix to 1 dimension
+        pca = PCA(n_components=1)
+        mfcc_vectors.append(pca.fit_transform(mfcc_matrix).flatten())
+    return mfcc_sums, mfcc_means, mfcc_stds, mfcc_mins, mfcc_maxs, mfcc_vectors
 
 
 
@@ -182,8 +174,9 @@ def extract_spectral_contrast(waveforms, sample_rates):
     Analyzes the Spectral Constrast (SC) for each waveform.
     Spectral contrast produces a matrix of coefficients which we 
     aggregate using a number of statistics and reduce to several
-    aggregated statistics. These statistics include sum, mean,
-    standard deviation, min, and max values.
+    aggregated statistics. We use PCA to reduce the SC matrix down
+    to 1 dimensional vectors which maintain the highest information
+    possible.
 
     Args:
         waveforms (np.ndarray): audio time series
@@ -195,39 +188,31 @@ def extract_spectral_contrast(waveforms, sample_rates):
         [float]: array of SC standard deviations.
         [float]: array of SC minimum values.
         [float]: array of SC maximum values.
+        [np.array]: array of specral contrast matrices reduced to 1 dimensional vectors.
     """
 
-    # initialize return variables
     sc_sums = []
     sc_means = []
     sc_stds = []
     sc_mins = []
     sc_maxs = []
-    # loop over all wave forms
+    sc_vectors = []
+    # Compute Spectral Contrast for all waveforms
     for i in range(len(waveforms)):
-        # compute spectral contrast
-        contrasts = librosa.feature.spectral_contrast(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size)
-        # initialize aggregator variables
-        sums = []
-        means = []
-        stds = []
-        mins = []
-        maxs = []
-        # Loop over constract matrix to get aggregate stats
-        for j in range(len(contrasts)):
-            sums.append(np.sum(contrasts[j]))
-            means.append(np.mean(contrasts[j]))
-            stds.append(np.std(contrasts[j]))
-            mins.append(np.min(contrasts[j]))
-            maxs.append(np.max(contrasts[j]))
-        # accumulate results
-        sc_sums.append(np.mean(sums))
-        sc_means.append(np.mean(means))
-        sc_stds.append(np.mean(stds))
-        sc_mins.append(np.min(mins))
-        sc_maxs.append(np.max(maxs))
-    # return spectral contrast stats
-    return sc_sums, sc_means, sc_stds, sc_mins, sc_maxs
+        # Compute Spectral Contrast
+        contrast = librosa.feature.spectral_contrast(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size)
+        # Flatten to aggregate statistics
+        contrast_flat = contrast.flatten()
+        sc_sums.append(np.sum(contrast_flat))
+        sc_means.append(np.mean(contrast_flat))
+        sc_stds.append(np.std(contrast_flat))
+        sc_mins.append(np.min(contrast_flat))
+        sc_maxs.append(np.max(contrast_flat))
+        # Perform PCA to reduce SC to 1 dimension
+        pca = PCA(n_components=1)
+        sc_vectors.append(pca.fit_transform(contrast).flatten())
+    # Return all values
+    return sc_sums, sc_means, sc_stds, sc_mins, sc_maxs, sc_vectors
 
 
 
@@ -240,6 +225,7 @@ if __name__ == '__main__':
         tempo, beat_frames = extract_beat([y], [sr])
         # Get aggregate MFCC features
         # mfcc_sums, mfcc_means, mfcc_stds, mfcc_mins, mfcc_maxs = extract_mfcc([y], [sr])
+        extract_mfcc(y, sr)
         extract_spectral_contrast(y, sr)
     else:
         filenames = get_audio_filenames(train_dir)
