@@ -20,6 +20,8 @@ def aggregate_stats(matrix):
     flat = matrix.flatten()
     return np.sum(flat), np.mean(flat), np.std(flat), np.min(flat), np.max(flat)
 
+
+
 def pca_reduction(matrix, dimensions):
     """
     Takes a 2D matrix of values and reduces it to
@@ -34,3 +36,30 @@ def pca_reduction(matrix, dimensions):
     """
     pca = PCA(n_components=dimensions)
     return pca.fit_transform(matrix).flatten()
+
+
+
+def matrix_to_columns(matrix, label):
+    """
+    Takes a matrix where each row represents unique data for
+    a specific instance. It then transposes this matrix so that
+    each row now represents a column for a specific feature of
+    that data and stores each of them in a dictionary.
+
+    Args:
+        matrix ([[x]]): matrix where each row is a series of data
+                        for a specific instance.
+    
+    Returns:
+        (dictionary): dictionary where each key is a series of data
+                      for multiple instances.
+    """
+    # convert to np.matrix and transpose
+    trans = np.array(matrix).T
+    # initialize data dictionary
+    data = {}
+    # iterate over rows of transpose and add each row to dictionary
+    for i in range(len(trans)):
+        lbl = label + '_' + str(i)
+        data[lbl] = trans[i]
+    return data
