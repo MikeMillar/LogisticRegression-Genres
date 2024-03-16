@@ -17,7 +17,7 @@ test_dir = 'data/test/'
 test_path = 'data/train/blues/blues.00000.au'
 
 # Configuration Variables
-test = False   # If test is set to true, run on single audio file described above
+test = True   # If test is set to true, run on single audio file described above
 hop_size = 512 # Step size of the audio, 512 ~= 23ms
 mfcc_count = 13 # Total number of MFCC's to return
 
@@ -204,17 +204,38 @@ def extract_spectral_contrast(waveforms, sample_rates):
 
 
 
+def extract_spectral_centroid(waveforms, sample_rates):
+    """
+    Extracts the Spectral Centroid of each waveford keeps the
+    mean of the result.
+
+    Args:
+        waveforms (np.ndarray): audio time series
+        sample_rates (np.ndarray): audio sample rates
+
+    Returns:
+        [float]: Returns a list of the means of each spectral
+                 centroid for each waveform.
+    """
+    centroid_means = []
+    for i in range(len(waveforms)):
+        centroid_means.append(np.mean(librosa.feature.spectral_centroid(y=waveforms[i], sr=sample_rates[i])))
+    return centroid_means
+    
+
+
 if __name__ == '__main__':
     # Check if testing mode is on
     if test:
         # load the audio file
         y, sr = librosa.load(test_path)
         # get tempo (bpm)
-        tempo, beat_frames = extract_beat([y], [sr])
+        # tempo, beat_frames = extract_beat([y], [sr])
         # Get aggregate MFCC features
         # mfcc_sums, mfcc_means, mfcc_stds, mfcc_mins, mfcc_maxs = extract_mfcc([y], [sr])
         # extract_mfcc(y, sr)
         # extract_spectral_contrast(y, sr)
+        extract_spectral_centroid(y, sr)
     else:
         # initialize audio data for dataframe
         audio_data: dict = {}
@@ -226,9 +247,16 @@ if __name__ == '__main__':
 
         # Load the audio files, extracting their waveforms and sample rates
         waveforms, sample_rates = load_audio_files(filenames)
+
+        # Single Valued Features
         # Extract the bpm and beat frames of every audio file
         tempos, beat_frames = extract_beat(waveforms, sample_rates)
         audio_data['bpm'] = tempos
+        # Extract the mean spectral centroid of every audio file
+        s_centroids = extract_spectral_centroid(waveforms, sample_rates)
+        audio_data['s_centroid'] = s_centroids
+
+        # Large Dimensionality Features
         # Extract MFCC features
         mfcc_data = extract_mfcc(waveforms, sample_rates)
         audio_data = audio_data | mfcc_data
