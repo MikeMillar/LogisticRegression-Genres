@@ -35,6 +35,7 @@ def get_audio_filenames(dir):
         [string]: Array of string file paths of matching audio files.
     """
 
+    print('Fetching audio file paths...')
     # Get all files in the directory
     dir_list = os.listdir(dir)
     # Initialize list
@@ -67,6 +68,7 @@ def extract_labels(filenames):
         [string]: Array of strings representing the labeled genre of each file.
     """
 
+    print('Fetching file labels...')
     labels = []
     for filename in filenames:
         sub_filename = filename[11:]
@@ -92,6 +94,7 @@ def load_audio_files(filepaths):
         np.ndarray: audio sample rates
     """
 
+    print('Loading audio files...')
     waveforms = []
     sample_rates = []
     for path in filepaths:
@@ -116,6 +119,7 @@ def extract_beat(waveforms, sample_rates):
         np.ndarray: beat frames for each waveform
     """
 
+    print('Extracting tempo...')
     tempos = []
     beat_frame_sets = []
     for i in range(len(waveforms)):
@@ -129,92 +133,74 @@ def extract_beat(waveforms, sample_rates):
 def extract_mfcc(waveforms, sample_rates):
     """
     Analyzes the Mel Frequency Cepstral Coefficients (MFCC) for each
-    waveform. MFCC produces a matrix of coefficients which we 
-    aggregate using a number of statistics and reduce to several
-    aggregated statistics. Use PCA to reduce the MFCC matrix down
-    to single dimensional vectors.
+    waveform. MFCC produces a matrix of shape (mfcc_count,x), where
+    x depends on the hop length. Each MFCC matrix is mean pooled on
+    the columns. Function returns a dictionary of all the MFCC
+    coefficient mean pooled columns for each waveform.
 
     Args:
         waveforms (np.ndarray): audio time series
         sample_rates (np.ndarray): audio sample rates
 
     Returns:
-        [float]: array of MFCC values summed.
-        [float]: array of MFCC values means.
-        [float]: array of MFCC standard deviations.
-        [float]: array of MFCC minimum values.
-        [float]: array of MFCC maximum values.
-        [np.array]: array of MFCC matrices reduced to 1 dimensional vectors
+        (dict): Dictionary of mean pooled MFCC data
     """
-
-    mfcc_sums = []
-    mfcc_means = []
-    mfcc_stds = []
-    mfcc_mins = []
-    mfcc_maxs = []
+    print('Extracting MFCCs...')
+    mfcc_matrices = []
     mfcc_vectors = []
     # Compute MFCC for all waveforms
     for i in range(len(waveforms)):
         # Compute MFCC matrix
         mfcc_matrix = librosa.feature.mfcc(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size, n_mfcc=mfcc_count)
-        # Get aggregate statistics
-        sum, mean, std, min, max = utils.aggregate_stats(mfcc_matrix)
-        mfcc_sums.append(sum)
-        mfcc_means.append(mean)
-        mfcc_stds.append(std)
-        mfcc_mins.append(min)
-        mfcc_maxs.append(max)
-        # Perform PCA to reduce MFCC matrix to 1 dimension
-        mfcc_vectors.append(utils.pca_reduction(mfcc_matrix, 1))
-        break
-    return mfcc_sums, mfcc_means, mfcc_stds, mfcc_mins, mfcc_maxs, mfcc_vectors
+        mfcc_matrices.append(mfcc_matrix)
+    # Ensure all matrices are of same size (truncating wider matrices)
+    mfcc_trimmed_matrices = utils.trim_matrices(mfcc_matrices)
+    for mfcc in mfcc_trimmed_matrices:
+        # Mean pool MFCC matrix on the columns
+        mfcc_mp = np.mean(mfcc, axis=0)
+        # Add to vectors
+        mfcc_vectors.append(mfcc_mp)
+    # Checking lengths of vectors
+    x = [len(v) for v in mfcc_vectors]
+    print('MFCC Vector Length mean:', np.mean(x))
+    # Convert to column dictionary and return
+    return utils.matrix_to_columns(mfcc_vectors, 'mfcc')
 
 
 
 def extract_spectral_contrast(waveforms, sample_rates):
     """
     Analyzes the Spectral Constrast (SC) for each waveform.
-    Spectral contrast produces a matrix of coefficients which we 
-    aggregate using a number of statistics and reduce to several
-    aggregated statistics. We use PCA to reduce the SC matrix down
-    to 1 dimensional vectors which maintain the highest information
-    possible.
+    Spectral contrast produces a matrix of coefficients which
+    are mean pooled on the columns. Fucntion returns a 
+    dictionary of all the SC coefficient mean pooled columns
+    for each waveform.
 
     Args:
         waveforms (np.ndarray): audio time series
         sample_rates (np.ndarray): audio sample rates
 
     Returns:
-        [float]: array of SC values summed.
-        [float]: array of SC values means.
-        [float]: array of SC standard deviations.
-        [float]: array of SC minimum values.
-        [float]: array of SC maximum values.
-        [np.array]: array of specral contrast matrices reduced to 1 dimensional vectors.
+        (dict): Dictionary of mean pooled SC data
     """
 
-    sc_sums = []
-    sc_means = []
-    sc_stds = []
-    sc_mins = []
-    sc_maxs = []
+    print("Extracting SCs...")
+    sc_matrices = []
     sc_vectors = []
     # Compute Spectral Contrast for all waveforms
     for i in range(len(waveforms)):
         # Compute Spectral Contrast
         contrast = librosa.feature.spectral_contrast(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size)
-        # Get aggregate statistics
-        sum, mean, std, min, max = utils.aggregate_stats(contrast)
-        sc_sums.append(sum)
-        sc_means.append(mean)
-        sc_stds.append(std)
-        sc_mins.append(min)
-        sc_maxs.append(max)
-        # Perform PCA to reduce SC to 1 dimension
-        sc_vectors.append(utils.pca_reduction(contrast, 1))
-        break
-    # Return all values
-    return sc_sums, sc_means, sc_stds, sc_mins, sc_maxs, sc_vectors
+        sc_matrices.append(contrast)
+    # Ensure all matrices are of same size (truncating wider matrices)
+    sc_trimmed_matrices = utils.trim_matrices(sc_matrices)
+    for m in sc_trimmed_matrices:
+        # Mean pooling on the columns of the SC
+        contrast_mp = np.mean(m, axis=0)
+        # Add to vectors
+        sc_vectors.append(contrast_mp)
+    # Convert to column dictionary and return
+    return utils.matrix_to_columns(sc_vectors, 'sc')
 
 
 
@@ -230,33 +216,28 @@ if __name__ == '__main__':
         # extract_mfcc(y, sr)
         # extract_spectral_contrast(y, sr)
     else:
+        # initialize audio data for dataframe
+        audio_data: dict = {}
+        # Fetch all the audio files paths to process
         filenames = get_audio_filenames(train_dir)
+        # Extract the labeles for each audio file
         labels = extract_labels(filenames)
+        audio_data['label'] = labels
+
+        # Load the audio files, extracting their waveforms and sample rates
         waveforms, sample_rates = load_audio_files(filenames)
+        # Extract the bpm and beat frames of every audio file
         tempos, beat_frames = extract_beat(waveforms, sample_rates)
-        mfcc_sums, mfcc_means, mfcc_stds, mfcc_mins, mfcc_maxs, mfcc_vectors = extract_mfcc(waveforms, sample_rates)
-        sc_sums, sc_means, sc_stds, sc_mins, sc_maxs, sc_vectors = extract_spectral_contrast(waveforms, sample_rates)
-        print('=====vector lengths=====')
-        print(f'files={len(filenames)}, y={len(waveforms)}, sr={len(sample_rates)}, tempos={len(tempos)},\n'
-              +f'm_sum={len(mfcc_sums)}, m_mean={len(mfcc_means)}, m_std={len(mfcc_stds)}, m_min={len(mfcc_mins)}, m_max={len(mfcc_maxs)}, m_v={len(mfcc_vectors)},\n'
-              +f's_sum={len(sc_sums)}, s_mean={len(sc_means)}, s_std={len(sc_stds)}, s_min={len(sc_mins)}, s_max={len(sc_maxs)}, s_v={len(sc_vectors)}')
-        audio_data = {
-            'file': filenames,
-            'bpm': tempos,
-            'mfcc_sum': mfcc_sums,
-            'mfcc_mean': mfcc_means,
-            'mfcc_std': mfcc_stds,
-            'mfcc_min': mfcc_mins,
-            'mfcc_max': mfcc_maxs,
-            'mfcc_vector': mfcc_vectors,
-            'sc_sum': sc_sums,
-            'sc_mean': sc_means,
-            'sc_std': sc_stds,
-            'sc_min': sc_mins,
-            'sc_max': sc_maxs,
-            'sc_vector': sc_vectors,
-            'label': labels
-        }
-        df = pd.DataFrame(audio_data)
-        print(df)
+        audio_data['bpm'] = tempos
+        # Extract MFCC features
+        mfcc_data = extract_mfcc(waveforms, sample_rates)
+        audio_data = audio_data | mfcc_data
+        # Extract SC features
+        sc_data = extract_spectral_contrast(waveforms, sample_rates)
+        audio_data = audio_data | sc_data
+        
+        # Load data into dataframe and save to file
+        df = pd.DataFrame(audio_data, index=filenames)
+        print(df.head())
+        df.to_csv('data/train/music_mfcc_sc.csv')
     
