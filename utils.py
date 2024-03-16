@@ -49,6 +49,8 @@ def matrix_to_columns(matrix, label):
     Args:
         matrix ([[x]]): matrix where each row is a series of data
                         for a specific instance.
+        label (string): base label name, which will have indices
+                        append to it.
     
     Returns:
         (dictionary): dictionary where each key is a series of data
@@ -63,3 +65,26 @@ def matrix_to_columns(matrix, label):
         lbl = label + '_' + str(i)
         data[lbl] = trans[i]
     return data
+
+
+def trim_matrices(container):
+    """
+    Takes a container of matrices, finds the minimum number of
+    columns among all the matrices and truncates all matrices
+    to have the same number of columns.
+
+    Args:
+        container ([matrix]): A list of matrices
+
+    Returns:
+        ([matrix]): A list of matrices of same width
+    """
+    # Find the minimum number of columns of the inner matrices
+    max_cols = min(m.shape[1] for m in container)
+
+    # truncate all matrices
+    trimmed = []
+    for m in container:
+        tm = m[:, :max_cols]
+        trimmed.append(tm)
+    return trimmed
