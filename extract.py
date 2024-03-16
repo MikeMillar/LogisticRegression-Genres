@@ -20,6 +20,9 @@ test_path = 'data/train/blues/blues.00000.au'
 test = False   # If test is set to true, run on single audio file described above
 hop_size = 512 # Step size of the audio, 512 ~= 23ms
 mfcc_count = 13 # Total number of MFCC's to return
+mfcc_max_columns = 1288
+sc_max_columns = 1288
+pc_max_columns = 1288
 
 
 
@@ -154,15 +157,12 @@ def extract_mfcc(waveforms, sample_rates):
         mfcc_matrix = librosa.feature.mfcc(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size, n_mfcc=mfcc_count)
         mfcc_matrices.append(mfcc_matrix)
     # Ensure all matrices are of same size (truncating wider matrices)
-    mfcc_trimmed_matrices = utils.trim_matrices(mfcc_matrices)
+    mfcc_trimmed_matrices = utils.trim_matrices(mfcc_matrices, mfcc_max_columns)
     for mfcc in mfcc_trimmed_matrices:
         # Mean pool MFCC matrix on the columns
         mfcc_mp = np.mean(mfcc, axis=0)
         # Add to vectors
         mfcc_vectors.append(mfcc_mp)
-    # Checking lengths of vectors
-    x = [len(v) for v in mfcc_vectors]
-    print('MFCC Vector Length mean:', np.mean(x))
     # Convert to column dictionary and return
     return utils.matrix_to_columns(mfcc_vectors, 'mfcc')
 
@@ -193,7 +193,7 @@ def extract_spectral_contrast(waveforms, sample_rates):
         contrast = librosa.feature.spectral_contrast(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size)
         sc_matrices.append(contrast)
     # Ensure all matrices are of same size (truncating wider matrices)
-    sc_trimmed_matrices = utils.trim_matrices(sc_matrices)
+    sc_trimmed_matrices = utils.trim_matrices(sc_matrices, sc_max_columns)
     for m in sc_trimmed_matrices:
         # Mean pooling on the columns of the SC
         contrast_mp = np.mean(m, axis=0)
@@ -241,7 +241,7 @@ def extract_spectral_rolloff(waveforms, sample_rates):
     print("Extracting Spectral Rolloffs")
     rolloffs = []
     for i in range(len(waveforms)):
-        rolloffs.append(np.mean(librosa.feature.spectral_rolloff(y=waveforms, sr=sample_rates, hop_length=hop_size)))
+        rolloffs.append(np.mean(librosa.feature.spectral_rolloff(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size)))
     return rolloffs
 
 
@@ -265,7 +265,7 @@ def extract_pitch_chroma(waveforms, sample_rates):
     c_vectors = []
     for i in range(len(waveforms)):
         c_matrices.append(librosa.feature.chroma_stft(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size))
-    c_trimmed_matrices = utils.trim_matrices(c_matrices)
+    c_trimmed_matrices = utils.trim_matrices(c_matrices, pc_max_columns)
     for m in c_trimmed_matrices:
         c_vectors.append(np.mean(m, axis=0))
     return utils.matrix_to_columns(c_vectors, 'chroma_h')
@@ -327,10 +327,10 @@ if __name__ == '__main__':
         # initialize audio data for dataframe
         audio_data: dict = {}
         # Fetch all the audio files paths to process
-        filenames = get_audio_filenames(train_dir)
+        filenames = get_audio_filenames(test_dir)
         # Extract the labeles for each audio file
-        labels = extract_labels(filenames)
-        audio_data['label'] = labels
+        # labels = extract_labels(filenames)
+        # audio_data['label'] = labels
 
         # Load the audio files, extracting their waveforms and sample rates
         waveforms, sample_rates = load_audio_files(filenames)
@@ -362,9 +362,15 @@ if __name__ == '__main__':
         # Extract PC features
         pc_data = extract_pitch_chroma(waveforms, sample_rates)
         audio_data = audio_data | pc_data
+
+        filecount = len(filenames)
+        for key in audio_data.keys():
+            size = len(audio_data[key])
+            if not(size == filecount):
+                print(f"key={key}, size={len(audio_data[key])}")
         
         # Load data into dataframe and save to file
         df = pd.DataFrame(audio_data, index=filenames)
         print(df.head())
-        df.to_csv('data/train/music_full.csv')
+        df.to_csv('data/test/test_full.csv')
     

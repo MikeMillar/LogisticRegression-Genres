@@ -67,24 +67,31 @@ def matrix_to_columns(matrix, label):
     return data
 
 
-def trim_matrices(container):
+def trim_matrices(container, n_cols):
     """
-    Takes a container of matrices, finds the minimum number of
-    columns among all the matrices and truncates all matrices
-    to have the same number of columns.
+    Takes a container of matrices, and either pads or
+    truncates each matrix so that they have the desired
+    number of columns.
 
     Args:
         container ([matrix]): A list of matrices
+        n_cols (int): Number of columns each matrix should have
 
     Returns:
         ([matrix]): A list of matrices of same width
     """
     # Find the minimum number of columns of the inner matrices
-    max_cols = min(m.shape[1] for m in container)
+    min_cols = min(m.shape[1] for m in container)
 
-    # truncate all matrices
+    
     trimmed = []
     for m in container:
-        tm = m[:, :max_cols]
-        trimmed.append(tm)
+        if m.shape[1] >= n_cols:
+            # truncate matrix
+            tm = m[:, :n_cols]
+            trimmed.append(tm)
+        else:
+            # pad matrix
+            tm = np.pad(m, ((0, 0), (0, n_cols - m.shape[1])), mode='constant')
+            trimmed.append(tm)
     return trimmed
