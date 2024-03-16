@@ -17,7 +17,7 @@ test_dir = 'data/test/'
 test_path = 'data/train/blues/blues.00000.au'
 
 # Configuration Variables
-test = True   # If test is set to true, run on single audio file described above
+test = False   # If test is set to true, run on single audio file described above
 hop_size = 512 # Step size of the audio, 512 ~= 23ms
 mfcc_count = 13 # Total number of MFCC's to return
 
@@ -272,6 +272,44 @@ def extract_pitch_chroma(waveforms, sample_rates):
 
 
 
+def extract_zero_crossing_rate(waveforms):
+    """
+    Extracts the Zero Crossing Rate (ZCR) for each
+    waveform and computes the mean of the vector.
+    
+    Args:
+        waveforms (np.ndarray): audio time series
+        
+    Returns:
+        ([float]): A list of means of the ZCR data of
+                   each waveform.
+    """
+    zcrs = []
+    for i in range(len(waveforms)):
+        zcrs.append(np.mean(librosa.feature.zero_crossing_rate(y=waveforms[i], hop_length=hop_size)))
+    return zcrs
+
+
+
+def extract_spectral_flatness(waveforms):
+    """
+    Extracts the Spectral Flatness for each waveform
+    and computes the mean of the vector.
+    
+    Args:
+        waveforms (np.ndarray): audio time series
+
+    Returns:
+        ([float]): A list of means of the spectral
+                   flatness of each waveform.
+    """
+    s_flats = []
+    for i in range(len(waveforms)):
+        s_flats.append(np.mean(librosa.feature.spectral_flatness(y=waveforms[i], hop_length=hop_size)))
+    return s_flats
+
+
+
 if __name__ == '__main__':
     # Check if testing mode is on
     if test:
@@ -307,6 +345,12 @@ if __name__ == '__main__':
         # Extract the mean spectral rolloff of every audio file
         s_rolloffs = extract_spectral_rolloff(waveforms, sample_rates)
         audio_data['s_rolloff'] = s_rolloffs
+        # Extract the mean zero corssing rate of every audio file
+        zcrs = extract_zero_crossing_rate(waveforms)
+        audio_data['zcr'] = zcrs
+        # Extract the spectral flatness of every audio file
+        s_flats = extract_spectral_flatness(waveforms)
+        audio_data['s_flat'] = s_flats
 
         # Large Dimensionality Features
         # Extract MFCC features
@@ -322,5 +366,5 @@ if __name__ == '__main__':
         # Load data into dataframe and save to file
         df = pd.DataFrame(audio_data, index=filenames)
         print(df.head())
-        df.to_csv('data/train/music_mfcc_sc.csv')
+        df.to_csv('data/train/music_full.csv')
     
