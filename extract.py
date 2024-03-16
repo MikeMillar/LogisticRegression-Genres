@@ -206,7 +206,7 @@ def extract_spectral_contrast(waveforms, sample_rates):
 
 def extract_spectral_centroid(waveforms, sample_rates):
     """
-    Extracts the Spectral Centroid of each waveford keeps the
+    Extracts the Spectral Centroid of each waveform, keeps the
     mean of the result.
 
     Args:
@@ -219,9 +219,29 @@ def extract_spectral_centroid(waveforms, sample_rates):
     """
     centroid_means = []
     for i in range(len(waveforms)):
-        centroid_means.append(np.mean(librosa.feature.spectral_centroid(y=waveforms[i], sr=sample_rates[i])))
+        centroid_means.append(np.mean(librosa.feature.spectral_centroid(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size)))
     return centroid_means
     
+
+
+def extract_spectral_rolloff(waveforms, sample_rates):
+    """
+    Extracts the Spectrall Rolloff of each waveform, keeps the
+    mean of the result.
+
+    Args:
+        waveforms (np.ndarray): audio time series
+        sample_rates (np.ndarray): audio sample rates
+
+    Returns:
+        [float]: Returns a list of the means of each spectral
+                 rolloff for each waveform.
+    """
+    rolloffs = []
+    for i in range(len(waveforms)):
+        rolloffs.append(np.mean(librosa.feature.spectral_rolloff(y=waveforms, sr=sample_rates, hop_length=hop_size)))
+    return rolloffs
+
 
 
 if __name__ == '__main__':
@@ -235,7 +255,8 @@ if __name__ == '__main__':
         # mfcc_sums, mfcc_means, mfcc_stds, mfcc_mins, mfcc_maxs = extract_mfcc([y], [sr])
         # extract_mfcc(y, sr)
         # extract_spectral_contrast(y, sr)
-        extract_spectral_centroid(y, sr)
+        # extract_spectral_centroid(y, sr)
+        extract_spectral_rolloff(y, sr)
     else:
         # initialize audio data for dataframe
         audio_data: dict = {}
@@ -255,6 +276,9 @@ if __name__ == '__main__':
         # Extract the mean spectral centroid of every audio file
         s_centroids = extract_spectral_centroid(waveforms, sample_rates)
         audio_data['s_centroid'] = s_centroids
+        # Extract the mean spectral rolloff of every audio file
+        s_rolloffs = extract_spectral_rolloff(waveforms, sample_rates)
+        audio_data['s_rolloff'] = s_rolloffs
 
         # Large Dimensionality Features
         # Extract MFCC features
