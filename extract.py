@@ -217,6 +217,7 @@ def extract_spectral_centroid(waveforms, sample_rates):
         [float]: Returns a list of the means of each spectral
                  centroid for each waveform.
     """
+    print("Extracting Spectral Centroids...")
     centroid_means = []
     for i in range(len(waveforms)):
         centroid_means.append(np.mean(librosa.feature.spectral_centroid(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size)))
@@ -237,10 +238,37 @@ def extract_spectral_rolloff(waveforms, sample_rates):
         [float]: Returns a list of the means of each spectral
                  rolloff for each waveform.
     """
+    print("Extracting Spectral Rolloffs")
     rolloffs = []
     for i in range(len(waveforms)):
         rolloffs.append(np.mean(librosa.feature.spectral_rolloff(y=waveforms, sr=sample_rates, hop_length=hop_size)))
     return rolloffs
+
+
+
+def extract_pitch_chroma(waveforms, sample_rates):
+    """
+    Extracts the Pitch Chroma of each waveform, then reduces
+    them to a single dimension using mean pooling on the columns.
+    The result is stored in a dictionary where each key is a column
+    of data.
+
+    Args:
+        waveforms (np.ndarray): audio time series
+        sample_rates (np.ndarray): audio sample rates
+
+    Returns:
+        (dict): Dictionary of mean pooled pitch chroma data
+    """
+    print("Extracting pitch chroma...")
+    c_matrices = []
+    c_vectors = []
+    for i in range(len(waveforms)):
+        c_matrices.append(librosa.feature.chroma_stft(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size))
+    c_trimmed_matrices = utils.trim_matrices(c_matrices)
+    for m in c_trimmed_matrices:
+        c_vectors.append(np.mean(m, axis=0))
+    return utils.matrix_to_columns(c_vectors, 'chroma_h')
 
 
 
@@ -287,6 +315,9 @@ if __name__ == '__main__':
         # Extract SC features
         sc_data = extract_spectral_contrast(waveforms, sample_rates)
         audio_data = audio_data | sc_data
+        # Extract PC features
+        pc_data = extract_pitch_chroma(waveforms, sample_rates)
+        audio_data = audio_data | pc_data
         
         # Load data into dataframe and save to file
         df = pd.DataFrame(audio_data, index=filenames)
