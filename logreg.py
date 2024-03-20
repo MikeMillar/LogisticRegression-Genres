@@ -2,7 +2,7 @@ import numpy as np
 import utils
 
 class LogisticRegression:
-    def __init__(self, learning_rate=0.01, penalty=1.0, epsilon=1e-9, max_iterations=10000) -> None:
+    def __init__(self, learning_rate=0.01, penalty=0.01, epsilon=1e-9, max_iterations=10000) -> None:
         """
         Initalizes the Logistic Regression model.
 
@@ -115,7 +115,7 @@ class LogisticRegression:
             Nothing.
         """
         # Save unique classes
-        self.classes = np.unique(Y)
+        self.classes, self.class_mapping = np.unique(Y, return_inverse=True)
         # Convert dataframe to a numpy array with added intercept
         X = self.add_intercept(np.array(X))
         # Encode the target values using huffman coding
@@ -125,6 +125,8 @@ class LogisticRegression:
         
         # Gradient Ascent - loop until early termination or max iterations
         for i in range(self.max_iterations):
+            # Print current values of W
+            print(W)
             # calculate P(Y = y_k | X) -> calling costs for lack of better name
             costs = np.dot(X, W.T)
             # Calculate errors of costs -> sum(X_qi * (Y_q - P(Y = y_k | X))
@@ -135,6 +137,8 @@ class LogisticRegression:
             W_new = W + self.learning_rate * (errors.T - penalties)
             # Calculate difference
             difference = self.compute_change(W, W_new)
+            # Print difference
+            print('Difference:', difference)
             # Update old weights with new weights
             W = W_new
             # Check if we can early terminate
@@ -145,6 +149,38 @@ class LogisticRegression:
         # Set our trained weights
         self.weights = W
 
-    def predict(self) -> None:
-        # TODO
-        pass
+    def compute_probabilities(self, X):
+        """
+        Given a data matrix X and the trained weights W,
+        computes the probability that any X_q is of class C.
+
+        Args:
+            X ([[x]]): Matrix of data
+
+        Returns:
+            (([x])): Matrix of probabilities of shape (n, c). 
+            where n is the total rows of data in X and C is the
+            total number of classes.
+        """
+        return self.exp(np.dot(X, self.weights.T))
+
+    def predict(self, X) -> None:
+        """
+        Using the previously trained weights (W), computes the 
+        normalized probabilities that each instance of X is
+        of any class. Then returns the value of the class that
+        has the highest probability for each instance of X.
+
+        Args:
+            X (df): Dataframe of data
+
+        Returns:
+            Y ([y]): Arraylike of predicted labels for each 
+                     instance of X.
+        """
+        # Compute probabilities of each instance for each class
+        probs = self.compute_probabilities(self.add_intercept(np.array(X)))
+        # Determine the column index with the highest probability
+        class_idx = np.argmax(probs, axis=1)
+        # Return labels of highest prediction
+        return self.classes[class_idx]
