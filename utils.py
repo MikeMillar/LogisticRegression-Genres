@@ -109,5 +109,5 @@ def normalize_rows(matrix):
     Returns:
         ([[x]]): Normalized version of the original matrix
     """
-    row_sums = np.sum(axis=1)
+    row_sums = np.sum(matrix, axis=1)
     return matrix / row_sums[:, np.newaxis]
