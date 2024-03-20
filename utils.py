@@ -95,3 +95,19 @@ def trim_matrices(container, n_cols):
             tm = np.pad(m, ((0, 0), (0, n_cols - m.shape[1])), mode='constant')
             trimmed.append(tm)
     return trimmed
+
+
+
+def normalize_rows(matrix):
+    """
+    Normalizes each row of the matrix so that the
+    sum of each matrix is 1.
+
+    Args:
+        matrix ([[x]]): 2D arraylike structure
+
+    Returns:
+        ([[x]]): Normalized version of the original matrix
+    """
+    row_sums = np.sum(axis=1)
+    return matrix / row_sums[:, np.newaxis]
