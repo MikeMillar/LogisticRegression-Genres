@@ -24,6 +24,9 @@ penalty = 0.01                                  # Regularization factor used for
 epsilon = 1e-9                                  # Early termination error difference used for gradient ascent
 max_iterations = int(10e4)                      # Max iterations before termination of gradient ascent
 
+def print_params():
+    print(f'train={train_path}, test={test_path}, test_size={split_size}, var={variance}, eta={learning_rate}, pen={penalty}, epsilon={epsilon}, max_iter={max_iterations}')
+
 def load_data(filename: str) -> pd.DataFrame:
     """
     Loads the CSV file path provided into a pandas dataframe.
@@ -137,6 +140,7 @@ def load_prep_scale(X_path, Z_path, split_size, variance):
     return X_train, X_test, Y_train, Y_test, Z
 
 if __name__ == "__main__":
+    print_params()
     # Load and prepare the data
     X_train, X_test, Y_train, Y_test, Z = load_prep_scale(train_path, test_path, split_size, variance)
 
