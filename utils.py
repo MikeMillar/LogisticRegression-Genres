@@ -86,7 +86,7 @@ def trim_matrices(container, n_cols):
     
     trimmed = []
     for m in container:
-        if m.shape[1] >= n_cols:
+        if m.shape[1] >= min_cols:
             # truncate matrix
             tm = m[:, :n_cols]
             trimmed.append(tm)
