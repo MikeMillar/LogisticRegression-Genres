@@ -2,20 +2,21 @@ import numpy as np
 import utils
 
 class LogisticRegression:
-    def __init__(self, learning_rate=0.01, penalty=0.01, epsilon=1e-9, max_iterations=10000) -> None:
+    def __init__(self, learning_rate=0.01, penalty=0.001, epsilon=1e-6, max_iterations=10000) -> None:
         """
         Initalizes the Logistic Regression model.
 
         Args:
             learning_rate (float): The learning rate or step size used in the gradient. Default 0.01
-            penalty (float): The penalty to apply to weights to ensure they don't grow too large. Default 1.0 (no penalty)
-            epsilon (float): The early termination condition value to check against. Dfeault 1e-9
+            penalty (float): The penalty to apply to weights to ensure they don't grow too large. Default 0.0 (no penalty)
+            epsilon (float): The early termination condition value to check against. Default 1e-9
             max_iterations (int): The max gradient ascent iterations before guaranteed termination. Default 10000
 
         Returns:
             Nothing.
         """
         self.learning_rate = learning_rate
+        self.default_learning_rate = learning_rate
         self.penalty = penalty
         self.epsilon = epsilon
         self.max_iterations = max_iterations
@@ -33,13 +34,15 @@ class LogisticRegression:
         independently.
 
         Args:
-            X ([[x]]):arraylike of numbers.
+            X ([[x]]): arraylike of numbers.
 
         Return:
             ([[x]]): The result of e^X in the same shape of X,
             where each row is normalized.
         """
-        return utils.normalize_rows(np.exp(X))
+        max_per_row = np.max(X, axis=1, keepdims=True)
+        z = np.exp(X - max_per_row)
+        return utils.normalize_rows(z)
     
     def encode(self, Y):
         """
@@ -100,6 +103,23 @@ class LogisticRegression:
         """
         return np.random.normal(0, 1, (len(self.classes), num_features))
 
+    def squared_error(self, errors):
+        """
+        Given a matrix of values which is assumed to be the difference of the the
+        actual value and the predicted value, computes the mean squared error
+        from that difference.
+
+        Args:
+            errors ([[x]]): Matrix of differences
+
+        Returns:
+            (float): Mean squared error value
+        """
+        return np.mean(np.square(errors))
+
+    def cross_entropy(self, Y, probs):
+        return -np.mean(np.sum(Y * np.log(probs + 1), axis=1))
+
     def fit(self, X, Y) -> None:
         """
         Trains the logistic regression model by computing a set of
@@ -122,29 +142,37 @@ class LogisticRegression:
         Y_encoded = self.encode(Y)
         # Initalize weight matrix with random values
         W = self.random_weights(X.shape[1])
+        # Set up previous iteration error
+        last_error = float('inf')
         
         # Gradient Ascent - loop until early termination or max iterations
         for i in range(self.max_iterations):
-            # Print current values of W
-            print(W)
+            # Overflow occured, exit program
+            if np.sum(np.isnan(W)) > 0:
+                print('NaN detected on iteration:', i)
+                exit()
             # calculate P(Y = y_k | X) -> calling costs for lack of better name
-            costs = np.dot(X, W.T)
-            # Calculate errors of costs -> sum(X_qi * (Y_q - P(Y = y_k | X))
-            errors = np.dot(X.T, Y_encoded - costs)
+            probs = self.exp(np.dot(X, W.T))
+            # costs = self.exp(np.dot(X, W.T))
+            # Calculate error
+            error = self.squared_error(Y_encoded - probs)
+            # error = self.cross_entropy(Y_encoded, probs)
+            error_diff = abs(error - last_error)
+            print('Error:', error, '\tDiff:', error_diff)
+            # Check for early termination
+            if error_diff < self.epsilon:
+                print(f'Early termination on iter={i} with error={error}')
+                break
+            # Update last error
+            last_error = error
             # Calculate pentalties -> lambda * W
             penalties = self.penalty * W
+            # Calculate gradient -> G = (erorrs.T - penalties) / total_instances
+            gradient = np.dot(X.T, Y_encoded - probs).T - penalties
             # Calculate new W -> W = W + (eta) * (errors - penalties)
-            W_new = W + self.learning_rate * (errors.T - penalties)
-            # Calculate difference
-            difference = self.compute_change(W, W_new)
-            # Print difference
-            print('Difference:', difference)
+            W_new = W + (self.learning_rate * gradient)
             # Update old weights with new weights
             W = W_new
-            # Check if we can early terminate
-            if difference <= self.epsilon:
-                print(f'Early termination on iter={i} with diff={difference}')
-                break
 
         # Set our trained weights
         self.weights = W
