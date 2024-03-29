@@ -330,10 +330,10 @@ if __name__ == '__main__':
         # initialize audio data for dataframe
         audio_data: dict = {}
         # Fetch all the audio files paths to process
-        filenames = get_audio_filenames(test_dir)
+        filenames = get_audio_filenames(train_dir)
         # Extract the labeles for each audio file
-        # labels = extract_labels(filenames)
-        # audio_data['label'] = labels
+        labels = extract_labels(filenames)
+        audio_data['label'] = labels
 
         # Load the audio files, extracting their waveforms and sample rates
         waveforms, sample_rates = load_audio_files(filenames)
@@ -375,5 +375,5 @@ if __name__ == '__main__':
         # Load data into dataframe and save to file
         df = pd.DataFrame(audio_data, index=filenames)
         print(df.head())
-        df.to_csv('data/test/test_short.csv')
+        df.to_csv('data/test/train_short.csv')
     
