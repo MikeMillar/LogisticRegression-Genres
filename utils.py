@@ -111,3 +111,19 @@ def normalize_rows(matrix):
     """
     row_sums = np.sum(matrix, axis=1)
     return matrix / row_sums[:, np.newaxis]
+
+
+
+def get_filename(path):
+    """
+    Reduces the given path to just the final filename
+    and excludes the containing directories.
+
+    Args:
+        path (str): full file path
+
+    Returns:
+        (str): string of just the file name
+    """
+    idx = path.rindex('/') + 1
+    return path[idx:]
