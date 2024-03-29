@@ -158,10 +158,10 @@ class LogisticRegression:
             error = self.squared_error(Y_encoded - probs)
             # error = self.cross_entropy(Y_encoded, probs)
             error_diff = abs(error - last_error)
-            print('Error:', error, '\tDiff:', error_diff)
+            # print('Error:', error, '\tDiff:', error_diff)
             # Check for early termination
             if error_diff < self.epsilon:
-                print(f'Early termination on iter={i} with error={error}')
+                # print(f'Early termination on iter={i} with error={error}')
                 break
             # Update last error
             last_error = error
