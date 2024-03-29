@@ -6,6 +6,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import balanced_accuracy_score, recall_score, precision_score
 from datetime import datetime
+import time
+
+# Other models
+from sklearn.linear_model import LogisticRegression as lr
+from sklearn import svm
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.ensemble import GradientBoostingClassifier
 
 # Internal imports
 import utils
@@ -13,8 +21,8 @@ from logreg import LogisticRegression
 
 # Global variables
 # Data variables
-train_path = 'data/train/music_full.csv'        # Path to the training CSV
-test_path = 'data/test/test_full.csv'           # Path to the output CSV
+train_path = 'data/train/train_short.csv'        # Path to the training CSV
+test_path = 'data/test/test_short.csv'           # Path to the output CSV
 save_path = 'data/result/'
 split_size = 0.2                                # Testing validation split size percent
 variance = 0.85                                 # Percent of variance to keep when reducing dimensionality
@@ -139,30 +147,27 @@ def load_prep_scale(X_path, Z_path, split_size, variance):
     # Return data
     return X_train, X_test, Y_train, Y_test, Z
 
-if __name__ == "__main__":
-    print_params()
-    # Load and prepare the data
-    X_train, X_test, Y_train, Y_test, Z = load_prep_scale(train_path, test_path, split_size, variance)
+def get_model_stats(Y_values, Y_true, Y_pred):
+    """
+    Calculates and prints the model statistics for the possible values,
+    the true values, and the predicted values.
 
-    # Create model
-    model = LogisticRegression(learning_rate=learning_rate, penalty=penalty, epsilon=epsilon, max_iterations=max_iterations)
+    Args:
+        Y_values (array): Array of possible labels
+        Y_true (array): Array of correct labels
+        Y_pred (array): Array of predicted labels
 
-    # Train the model
-    model.fit(X_train, Y_train)
-    # Print trained coefficients
-    print('LR Coefficients:\n', model.weights)
-
-    # Validation testing of the model
-    Y_pred = model.predict(X_test)
-    # Print predictions
-    print(Y_pred)
-
+    Returns:
+        balanced_accuracy (float): Balanced accuracy score, domain [0, 1]
+        adj_balanced_accuracy (float): Adjusted for randomness, 0 = no better than random
+        precision ([float]): Array of precision values for each label
+        recall ([float]): Array of recall values for each label
+    """
     # Validation Statistics
-    Y_values = np.unique(Y_train)
-    balanced_accuracy = balanced_accuracy_score(Y_test, Y_pred)
-    adj_balanced_accuracy = balanced_accuracy_score(Y_test, Y_pred, adjusted=True)
-    precision = precision_score(Y_test, Y_pred, average=None, labels=Y_values)
-    recall = recall_score(Y_test, Y_pred, average=None, labels=Y_values)
+    balanced_accuracy = balanced_accuracy_score(Y_true, Y_pred)
+    adj_balanced_accuracy = balanced_accuracy_score(Y_true, Y_pred, adjusted=True)
+    precision = precision_score(Y_true, Y_pred, average=None, labels=Y_values)
+    recall = recall_score(Y_true, Y_pred, average=None, labels=Y_values)
     print(f'Model Statistics:\nBalanced Accuracy = {balanced_accuracy}\nAdjusted Balanced Accuracy = {adj_balanced_accuracy}')
     print('Precision:')
     for i in range(len(Y_values)):
@@ -171,15 +176,109 @@ if __name__ == "__main__":
     print('Recall:')
     for i in range(len(Y_values)):
         print(f'\t{Y_values[i]}: {recall[i]}')
+    return balanced_accuracy, adj_balanced_accuracy, precision, recall
+
+def train_predict_custom(X_train, X_test, Y_train, Y_test, Z):
+    """
+    Trains, tests, and saves the output of the kaggle test file to a csv file.
+
+    Args:
+        X_train (dataframe): Samples of training data
+        X_test (dataframe): Samples of validation testing data
+        Y_train (array): Correct labels for the training data
+        Y_test (array): Correct labels for the validation data
+        Z (dataframe): Samples of the kaggle test file
+
+    Returns:
+        None
+    """
+    # Create model
+    model = LogisticRegression(learning_rate=learning_rate, penalty=penalty, epsilon=epsilon, max_iterations=max_iterations)
+
+    start = time.time()
+    # Train the model
+    model.fit(X_train, Y_train)
+
+    # Validation testing of the model
+    Y_pred = model.predict(X_test)
+
+    # Validation Statistics
+    Y_values = np.unique(Y_train)
+    print(f'Stats for Custom Logistic Regression({time.time() - start} s)')
+    get_model_stats(Y_values, Y_test, Y_pred)
 
     # Run model of actual test data
     out_pred = model.predict(Z)
     Z['class'] = out_pred
-    # Print the predictions
-    print(Z['class'])
 
     # Save the output data to a file
     # Get current datetime
     now = datetime.now()
     dt_string = now.strftime("%m-%d-%Y_%H-%M")
     Z['class'].to_csv(save_path + dt_string + '.csv', index_label='id')
+
+def train_predict_other(X_train, X_test, Y_train, Y_test):
+    """
+    Trains and tests on several Sklearn ML models for result comparrison.
+
+    Args:
+        X_train (dataframe): Samples of training data
+        X_test (dataframe): Samples of validation testing data
+        Y_train (array): Array of correct labels for training data
+        Y_test (array): Array of correct labels for validation testing data
+
+    Returns:
+        None
+    """
+    Y_values = np.unique(Y_train)
+
+    # Sklearn logistic regression
+    logreg = lr(penalty='l1', max_iter=max_iterations, tol=epsilon, solver='liblinear')
+    start = time.time()
+    logreg.fit(X_train, Y_train)
+    lr_pred = logreg.predict(X_test)
+    print(f'Stats for Sklearn Logistic Regression({time.time() - start} s):')
+    get_model_stats(Y_values, Y_test, lr_pred)
+
+    # Sklearn Random Forest
+    rf = RandomForestClassifier(criterion='entropy', max_depth=50)
+    start = time.time()
+    rf.fit(X_train, Y_train)
+    rf_pred = rf.predict(X_test)
+    print(f'Stats for Sklearn Random Forest({time.time() - start} s):')
+    get_model_stats(Y_values, Y_test, rf_pred)
+
+    # Sklearn Gaussian Naive Bayes
+    gnb = GaussianNB()
+    start = time.time()
+    gnb.fit(X_train, Y_train)
+    gnb_pred = gnb.predict(X_test)
+    print(f'Stats for Sklearn Gaussian Naive Bayes({time.time() - start} s):')
+    get_model_stats(Y_values, Y_test, gnb_pred)
+
+    # Sklearn Gradient Boosting
+    gbc = GradientBoostingClassifier(max_depth=50)
+    start = time.time()
+    gbc.fit(X_train, Y_train)
+    gbc_pred = gbc.predict(X_test)
+    print(f'Stats for Sklearn Gradient Boosting({time.time() - start} s):')
+    get_model_stats(Y_values, Y_test, gbc_pred)
+
+    # Sklearn SVM
+    svc = svm.SVC()
+    start = time.time()
+    svc.fit(X_train, Y_train)
+    svc_pred = svc.predict(X_test)
+    print(f'Stats for Sklearn SVM({time.time() - start} s):')
+    get_model_stats(Y_values, Y_test, svc_pred)
+
+if __name__ == "__main__":
+    print_params()
+    # Load and prepare the data
+    X_train, X_test, Y_train, Y_test, Z = load_prep_scale(train_path, test_path, split_size, variance)
+
+    # Test our model
+    train_predict_custom(X_train, X_test, Y_train, Y_test, Z)
+
+    # Test with other models
+    train_predict_other(X_train, X_test, Y_train, Y_test)
