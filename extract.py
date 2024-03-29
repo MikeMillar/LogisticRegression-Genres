@@ -133,7 +133,7 @@ def extract_beat(waveforms, sample_rates):
 
 
 
-def extract_mfcc(waveforms, sample_rates):
+def extract_mfcc(waveforms, sample_rates, pool_axis):
     """
     Analyzes the Mel Frequency Cepstral Coefficients (MFCC) for each
     waveform. MFCC produces a matrix of shape (mfcc_count,x), where
@@ -144,6 +144,7 @@ def extract_mfcc(waveforms, sample_rates):
     Args:
         waveforms (np.ndarray): audio time series
         sample_rates (np.ndarray): audio sample rates
+        pool_axis (0 or 1): 0 for column pooling, 1 for row pooling
 
     Returns:
         (dict): Dictionary of mean pooled MFCC data
@@ -159,8 +160,8 @@ def extract_mfcc(waveforms, sample_rates):
     # Ensure all matrices are of same size (truncating wider matrices)
     mfcc_trimmed_matrices = utils.trim_matrices(mfcc_matrices, mfcc_max_columns)
     for mfcc in mfcc_trimmed_matrices:
-        # Mean pool MFCC matrix on the columns
-        mfcc_mp = np.mean(mfcc, axis=0)
+        # Mean pool MFCC matrix
+        mfcc_mp = np.mean(mfcc, axis=pool_axis)
         # Add to vectors
         mfcc_vectors.append(mfcc_mp)
     # Convert to column dictionary and return
@@ -168,7 +169,7 @@ def extract_mfcc(waveforms, sample_rates):
 
 
 
-def extract_spectral_contrast(waveforms, sample_rates):
+def extract_spectral_contrast(waveforms, sample_rates, pool_axis):
     """
     Analyzes the Spectral Constrast (SC) for each waveform.
     Spectral contrast produces a matrix of coefficients which
@@ -179,6 +180,7 @@ def extract_spectral_contrast(waveforms, sample_rates):
     Args:
         waveforms (np.ndarray): audio time series
         sample_rates (np.ndarray): audio sample rates
+        pool_axis (0 or 1): 0 for column pooling, 1 for row pooling
 
     Returns:
         (dict): Dictionary of mean pooled SC data
@@ -196,7 +198,7 @@ def extract_spectral_contrast(waveforms, sample_rates):
     sc_trimmed_matrices = utils.trim_matrices(sc_matrices, sc_max_columns)
     for m in sc_trimmed_matrices:
         # Mean pooling on the columns of the SC
-        contrast_mp = np.mean(m, axis=0)
+        contrast_mp = np.mean(m, axis=pool_axis)
         # Add to vectors
         sc_vectors.append(contrast_mp)
     # Convert to column dictionary and return
@@ -246,7 +248,7 @@ def extract_spectral_rolloff(waveforms, sample_rates):
 
 
 
-def extract_pitch_chroma(waveforms, sample_rates):
+def extract_pitch_chroma(waveforms, sample_rates, pool_axis):
     """
     Extracts the Pitch Chroma of each waveform, then reduces
     them to a single dimension using mean pooling on the columns.
@@ -256,6 +258,7 @@ def extract_pitch_chroma(waveforms, sample_rates):
     Args:
         waveforms (np.ndarray): audio time series
         sample_rates (np.ndarray): audio sample rates
+        pool_axis (0 or 1): 0 for column pooling, 1 for row pooling
 
     Returns:
         (dict): Dictionary of mean pooled pitch chroma data
@@ -267,7 +270,7 @@ def extract_pitch_chroma(waveforms, sample_rates):
         c_matrices.append(librosa.feature.chroma_stft(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size))
     c_trimmed_matrices = utils.trim_matrices(c_matrices, pc_max_columns)
     for m in c_trimmed_matrices:
-        c_vectors.append(np.mean(m, axis=0))
+        c_vectors.append(np.mean(m, axis=pool_axis))
     return utils.matrix_to_columns(c_vectors, 'chroma_h')
 
 
@@ -354,13 +357,13 @@ if __name__ == '__main__':
 
         # Large Dimensionality Features
         # Extract MFCC features
-        mfcc_data = extract_mfcc(waveforms, sample_rates)
+        mfcc_data = extract_mfcc(waveforms, sample_rates, 1)
         audio_data = audio_data | mfcc_data
         # Extract SC features
-        sc_data = extract_spectral_contrast(waveforms, sample_rates)
+        sc_data = extract_spectral_contrast(waveforms, sample_rates, 1)
         audio_data = audio_data | sc_data
         # Extract PC features
-        pc_data = extract_pitch_chroma(waveforms, sample_rates)
+        pc_data = extract_pitch_chroma(waveforms, sample_rates, 1)
         audio_data = audio_data | pc_data
 
         filecount = len(filenames)
@@ -372,5 +375,5 @@ if __name__ == '__main__':
         # Load data into dataframe and save to file
         df = pd.DataFrame(audio_data, index=filenames)
         print(df.head())
-        df.to_csv('data/test/test_full.csv')
+        df.to_csv('data/test/test_short.csv')
     
