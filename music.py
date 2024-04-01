@@ -28,7 +28,7 @@ split_size = 0.2                                # Testing validation split size 
 variance = 0.85                                 # Percent of variance to keep when reducing dimensionality
 # Gradient Ascent variables
 learning_rate = 0.01                            # Learning rate used for gradient ascent
-penalty = 0.01                                  # Regularization factor used for gradient ascent
+penalty = 1.0                                   # Regularization factor used for gradient ascent
 epsilon = 1e-9                                  # Early termination error difference used for gradient ascent
 max_iterations = int(10e4)                      # Max iterations before termination of gradient ascent
 
