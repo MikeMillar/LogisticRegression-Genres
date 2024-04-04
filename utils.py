@@ -1,43 +1,4 @@
 import numpy as np
-from sklearn.decomposition import PCA
-
-def aggregate_stats(matrix):
-    """
-    Takes a 2D matrix of values, flattens it, and
-    collects statistics such as sum, mean, standard
-    deviation, minimum value, and maximum values.
-
-    Args:
-        matrix ([[float]]): 2D matrix of float values
-
-    Returns:
-        (float): Summation of all matrix values
-        (float): Mean of all matrix values
-        (float): Standard deviation of the matrix values
-        (float): The minimum value in the matrix
-        (float): The maximum value in the matrix
-    """
-    flat = matrix.flatten()
-    return np.sum(flat), np.mean(flat), np.std(flat), np.min(flat), np.max(flat)
-
-
-
-def pca_reduction(matrix, dimensions):
-    """
-    Takes a 2D matrix of values and reduces it to
-    a one-dimensional matrix of values using 
-    principal component analysis (PCA).
-
-    Args:
-        matrix ([[float]]): 2D matrix of float values
-
-    Returns:
-        ([float]): A vector of the PCA reduction
-    """
-    pca = PCA(n_components=dimensions)
-    return pca.fit_transform(matrix).flatten()
-
-
 
 def matrix_to_columns(matrix, label):
     """
@@ -57,7 +18,10 @@ def matrix_to_columns(matrix, label):
                       for multiple instances.
     """
     # convert to np.matrix and transpose
-    trans = np.array(matrix).T
+    if len(matrix.shape) > 1:
+        trans = np.array(matrix).T
+    else:
+        trans = matrix
     # initialize data dictionary
     data = {}
     # iterate over rows of transpose and add each row to dictionary
@@ -67,7 +31,7 @@ def matrix_to_columns(matrix, label):
     return data
 
 
-def trim_matrices(container, n_cols):
+def trim_matrices(container, flat):
     """
     Takes a container of matrices, and either pads or
     truncates each matrix so that they have the desired
@@ -80,37 +44,23 @@ def trim_matrices(container, n_cols):
     Returns:
         ([matrix]): A list of matrices of same width
     """
-    # Find the minimum number of columns of the inner matrices
-    min_cols = min(m.shape[1] for m in container)
-
-    
     trimmed = []
+    if flat:
+        # find minimum size of any array
+        min_size = min(len(v) for v in container)
+        for v in container:
+            if len(v) >= min_size:
+                tv = v[:min_size]
+                trimmed.append(tv)
+        return trimmed
+    # Find the minimum number of columns of the inner matrices
+    min_cols = min(m.shape[1] for m in container)    
     for m in container:
         if m.shape[1] >= min_cols:
             # truncate matrix
-            tm = m[:, :n_cols]
-            trimmed.append(tm)
-        else:
-            # pad matrix
-            tm = np.pad(m, ((0, 0), (0, n_cols - m.shape[1])), mode='constant')
+            tm = m[:, :min_cols]
             trimmed.append(tm)
     return trimmed
-
-
-
-def normalize_rows(matrix):
-    """
-    Normalizes each row of the matrix so that the
-    sum of each matrix is 1.
-
-    Args:
-        matrix ([[x]]): 2D arraylike structure
-
-    Returns:
-        ([[x]]): Normalized version of the original matrix
-    """
-    row_sums = np.sum(matrix, axis=1)
-    return matrix / row_sums[:, np.newaxis]
 
 
 
