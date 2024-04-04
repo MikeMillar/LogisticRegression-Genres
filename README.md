@@ -24,7 +24,12 @@ TODO
 # File Manifest
 This project contains many parts which can be run independantly, or together. The following manifest will outline the different files in the application. This will include detailed descriptions of each file, which will detail their functions and use cases.
 
-- `extract.py`: This file is used for the preprocessing and extraction of features in the audio files. The specified features and extracted and saved into an output file for later use.
-- `gradient.py`: This file contains the functions for the implementation of the gradient descent algorithm.
+- `extract.py`: This file is used for the preprocessing and extraction of features in the audio files. The specified features and extracted and saved into an output file for later use. This file requires manually commenting/uncommenting of code, to determine which features are extracted. It has some additional parameters which can be modified:
+    - train_dir: Directory of the training data.
+    - test_dir: Directory of the testing data.
+    - test: Boolean to indicate testing of the extract functions, only runs on a single file specified in the main method.
+    - flatten: Boolean to indicate if the vector/matrices should be flattened in the output dataframe/csv
+    - hop_size: Hop sized use by librosa during audio extraction.
+    - mfcc_count: How many MFCC coefficients to be extracted (13-20)
 - `logreg.py`: This file contains the functions for the implementation of the logistic regression model.
 - `utils.py`: This file contains useful utility functions that are used throughout the program.

@@ -21,9 +21,6 @@ test = False   # If test is set to true, run on single audio file described abov
 flatten = True # True if we want to flatten our matrices
 hop_size = 512 # Step size of the audio, 512 ~= 23ms
 mfcc_count = 20 # Total number of MFCC's to return
-mfcc_max_columns = 1288
-sc_max_columns = 1288
-pc_max_columns = 1288
 
 
 
