@@ -18,11 +18,13 @@ test_path = 'data/train/blues/blues.00000.au'
 
 # Configuration Variables
 test = False   # If test is set to true, run on single audio file described above
+flatten = True # True if we want to flatten our matrices
 hop_size = 512 # Step size of the audio, 512 ~= 23ms
-mfcc_count = 13 # Total number of MFCC's to return
+mfcc_count = 20 # Total number of MFCC's to return
 mfcc_max_columns = 1288
 sc_max_columns = 1288
 pc_max_columns = 1288
+
 
 
 
@@ -156,16 +158,20 @@ def extract_mfcc(waveforms, sample_rates, pool_axis):
     for i in range(len(waveforms)):
         # Compute MFCC matrix
         mfcc_matrix = librosa.feature.mfcc(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size, n_mfcc=mfcc_count)
+        if flatten:
+            mfcc_matrix = mfcc_matrix.flatten('F')
         mfcc_matrices.append(mfcc_matrix)
     # Ensure all matrices are of same size (truncating wider matrices)
-    mfcc_trimmed_matrices = utils.trim_matrices(mfcc_matrices, mfcc_max_columns)
+    mfcc_trimmed_matrices = utils.trim_matrices(mfcc_matrices, flatten)
+    if flatten:
+        return utils.matrix_to_columns(np.array(mfcc_trimmed_matrices), 'mfcc')
     for mfcc in mfcc_trimmed_matrices:
         # Mean pool MFCC matrix
         mfcc_mp = np.mean(mfcc, axis=pool_axis)
         # Add to vectors
         mfcc_vectors.append(mfcc_mp)
     # Convert to column dictionary and return
-    return utils.matrix_to_columns(mfcc_vectors, 'mfcc')
+    return utils.matrix_to_columns(np.array(mfcc_vectors), 'mfcc')
 
 
 
@@ -193,9 +199,13 @@ def extract_spectral_contrast(waveforms, sample_rates, pool_axis):
     for i in range(len(waveforms)):
         # Compute Spectral Contrast
         contrast = librosa.feature.spectral_contrast(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size)
+        if flatten:
+            contrast = contrast.flatten('F')
         sc_matrices.append(contrast)
     # Ensure all matrices are of same size (truncating wider matrices)
-    sc_trimmed_matrices = utils.trim_matrices(sc_matrices, sc_max_columns)
+    sc_trimmed_matrices = utils.trim_matrices(sc_matrices)
+    if flatten:
+        return utils.matrix_to_columns(sc_trimmed_matrices, 'sc')
     for m in sc_trimmed_matrices:
         # Mean pooling on the columns of the SC
         contrast_mp = np.mean(m, axis=pool_axis)
@@ -220,10 +230,17 @@ def extract_spectral_centroid(waveforms, sample_rates):
                  centroid for each waveform.
     """
     print("Extracting Spectral Centroids...")
-    centroid_means = []
+    centroids = []
     for i in range(len(waveforms)):
-        centroid_means.append(np.mean(librosa.feature.spectral_centroid(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size)))
-    return centroid_means
+        cent = librosa.feature.spectral_centroid(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size)
+        if flatten:
+            centroids.append(cent.flatten())
+            continue
+        centroids.append(np.mean(cent))
+    if flatten:
+        print(centroids)
+        return utils.matrix_to_columns(np.array(centroids), 'cent')
+    return centroids
     
 
 
@@ -243,7 +260,13 @@ def extract_spectral_rolloff(waveforms, sample_rates):
     print("Extracting Spectral Rolloffs")
     rolloffs = []
     for i in range(len(waveforms)):
-        rolloffs.append(np.mean(librosa.feature.spectral_rolloff(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size)))
+        rolloff = librosa.feature.spectral_rolloff(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size)
+        if flatten:
+            rolloffs.append(rolloff.flatten())
+            continue
+        rolloffs.append(np.mean(rolloff))
+    if flatten:
+        return utils.matrix_to_columns(np.array(rolloffs), 'rolloff')
     return rolloffs
 
 
@@ -267,8 +290,13 @@ def extract_pitch_chroma(waveforms, sample_rates, pool_axis):
     c_matrices = []
     c_vectors = []
     for i in range(len(waveforms)):
-        c_matrices.append(librosa.feature.chroma_stft(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size))
-    c_trimmed_matrices = utils.trim_matrices(c_matrices, pc_max_columns)
+        chroma = librosa.feature.chroma_stft(y=waveforms[i], sr=sample_rates[i], hop_length=hop_size)
+        if flatten:
+            chroma = chroma.flatten('F')
+        c_matrices.append(chroma)
+    c_trimmed_matrices = utils.trim_matrices(c_matrices)
+    if flatten:
+        return utils.matrix_to_columns(c_trimmed_matrices, 'chroma_h')
     for m in c_trimmed_matrices:
         c_vectors.append(np.mean(m, axis=pool_axis))
     return utils.matrix_to_columns(c_vectors, 'chroma_h')
@@ -289,7 +317,13 @@ def extract_zero_crossing_rate(waveforms):
     """
     zcrs = []
     for i in range(len(waveforms)):
-        zcrs.append(np.mean(librosa.feature.zero_crossing_rate(y=waveforms[i], hop_length=hop_size)))
+        zcr = librosa.feature.zero_crossing_rate(y=waveforms[i], hop_length=hop_size)
+        if flatten:
+            zcr.append(zcr.flatten())
+            continue
+        zcrs.append(np.mean(zcr))
+    if flatten:
+        return utils.matrix_to_columns(np.array(zcrs), 'zcr')
     return zcrs
 
 
@@ -308,7 +342,13 @@ def extract_spectral_flatness(waveforms):
     """
     s_flats = []
     for i in range(len(waveforms)):
-        s_flats.append(np.mean(librosa.feature.spectral_flatness(y=waveforms[i], hop_length=hop_size)))
+        flat = librosa.feature.spectral_flatness(y=waveforms[i], hop_length=hop_size)
+        if flatten:
+            s_flats.append(flat.flatten())
+            continue
+        s_flats.append(np.mean(flat))
+    if flatten:
+        return utils.matrix_to_columns(np.array(s_flats), 's_flat')
     return s_flats
 
 
@@ -332,39 +372,47 @@ if __name__ == '__main__':
         # Fetch all the audio files paths to process
         filenames = get_audio_filenames(train_dir)
         # Extract the labeles for each audio file
-        labels = extract_labels(filenames)
-        audio_data['label'] = labels
-
+        # labels = extract_labels(filenames)
+        
         # Load the audio files, extracting their waveforms and sample rates
         waveforms, sample_rates = load_audio_files(filenames)
 
         # Single Valued Features
         # Extract the bpm and beat frames of every audio file
-        tempos, beat_frames = extract_beat(waveforms, sample_rates)
-        audio_data['bpm'] = tempos
+        # tempos, beat_frames = extract_beat(waveforms, sample_rates)
         # Extract the mean spectral centroid of every audio file
-        s_centroids = extract_spectral_centroid(waveforms, sample_rates)
-        audio_data['s_centroid'] = s_centroids
+        # s_centroids = extract_spectral_centroid(waveforms, sample_rates)
         # Extract the mean spectral rolloff of every audio file
-        s_rolloffs = extract_spectral_rolloff(waveforms, sample_rates)
-        audio_data['s_rolloff'] = s_rolloffs
+        # s_rolloffs = extract_spectral_rolloff(waveforms, sample_rates)
         # Extract the mean zero corssing rate of every audio file
-        zcrs = extract_zero_crossing_rate(waveforms)
-        audio_data['zcr'] = zcrs
+        # zcrs = extract_zero_crossing_rate(waveforms)
         # Extract the spectral flatness of every audio file
-        s_flats = extract_spectral_flatness(waveforms)
-        audio_data['s_flat'] = s_flats
+        # s_flats = extract_spectral_flatness(waveforms)
 
         # Large Dimensionality Features
         # Extract MFCC features
         mfcc_data = extract_mfcc(waveforms, sample_rates, 1)
-        audio_data = audio_data | mfcc_data
         # Extract SC features
-        sc_data = extract_spectral_contrast(waveforms, sample_rates, 1)
-        audio_data = audio_data | sc_data
+        # sc_data = extract_spectral_contrast(waveforms, sample_rates, 1)
         # Extract PC features
-        pc_data = extract_pitch_chroma(waveforms, sample_rates, 1)
-        audio_data = audio_data | pc_data
+        # pc_data = extract_pitch_chroma(waveforms, sample_rates, 1)
+
+        # Add data to our audio_data dictionary
+        # audio_data['label'] = labels
+        # audio_data['bpm'] = tempos
+        # if flatten:
+        #     audio_data = audio_data | s_centroids
+        #     audio_data = audio_data | s_rolloffs
+        #     audio_data = audio_data | zcrs
+        #     audio_data = audio_data | s_flats
+        # else:
+        #     audio_data['s_centroid'] = s_centroids
+        #     audio_data['s_rolloff'] = s_rolloffs
+        #     audio_data['zcr'] = zcrs
+        #     audio_data['s_flat'] = s_flats
+        audio_data = audio_data | mfcc_data
+        # audio_data = audio_data | sc_data
+        # audio_data = audio_data | pc_data
 
         filecount = len(filenames)
         for key in audio_data.keys():
@@ -375,5 +423,5 @@ if __name__ == '__main__':
         # Load data into dataframe and save to file
         df = pd.DataFrame(audio_data, index=filenames)
         print(df.head())
-        df.to_csv('data/test/train_short.csv')
+        df.to_csv('data/train/music_mfcc_flat.csv')
     
