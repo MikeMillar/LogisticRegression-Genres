@@ -2,7 +2,7 @@ import numpy as np
 import utils
 
 class LogisticRegression:
-    def __init__(self, learning_rate=0.01, penalty=0.001, epsilon=1e-6, max_iterations=10000) -> None:
+    def __init__(self, learning_rate=0.01, penalty=1.0, epsilon=1e-6, max_iterations=10000) -> None:
         """
         Initalizes the Logistic Regression model.
 
@@ -42,7 +42,7 @@ class LogisticRegression:
         """
         max_per_row = np.max(X, axis=1, keepdims=True)
         z = np.exp(X - max_per_row)
-        return utils.normalize_rows(z)
+        return z / np.sum(z, axis=1, keepdims=True)
     
     def encode(self, Y):
         """
@@ -59,23 +59,6 @@ class LogisticRegression:
         """
         return (Y[:, None] == self.classes).astype(int)
     
-    def compute_change(self, W_old, W_new):
-        """
-        Computes the change between the total sum of the previous
-        values of W and the new values of W.
-
-        Args:
-            W_old ([[w]]): Old matrix of weight coefficients
-            W_new ([[w]]): New matrix of weight coefficients
-
-        Returns:
-            (float): The absolute difference of the two weight
-            matrices.
-        """
-        old_sum = np.sum(W_old)
-        new_sum = np.sum(W_new)
-        return abs(old_sum - new_sum)
-    
     def add_intercept(self, X):
         """
         Adds a column of ones to the X matrix.
@@ -87,7 +70,11 @@ class LogisticRegression:
             ([[x]]): Original matrix with a column of ones
             added to the front.
         """
-        intercept = np.ones((X.shape[0], 1))
+        if len(X.shape) == 1:
+            intercept = np.ones(X.shape[0])
+            return np.array([intercept, X]).T
+        else:
+            intercept = np.ones((X.shape[0], 1))
         return np.concatenate((intercept, X), axis=1)
     
     def random_weights(self, num_features):
@@ -101,7 +88,8 @@ class LogisticRegression:
         Returns: 
             ([[x]]): A matrix of shape (num_classes, num_features) with randomized values.
         """
-        return np.random.normal(0, 1, (len(self.classes), num_features))
+        return np.zeros((len(self.classes), num_features))
+        # return np.random.normal(0, 1, (len(self.classes), num_features))
 
     def squared_error(self, errors):
         """
@@ -115,10 +103,10 @@ class LogisticRegression:
         Returns:
             (float): Mean squared error value
         """
-        return np.mean(np.square(errors))
+        return np.sum(np.square(errors)) / errors.shape[0]
 
     def cross_entropy(self, Y, probs):
-        return -np.mean(np.sum(Y * np.log(probs + 1), axis=1))
+        return -np.mean(np.sum(Y * np.log(probs + 0.0001), axis=1))
 
     def fit(self, X, Y) -> None:
         """
@@ -144,6 +132,7 @@ class LogisticRegression:
         W = self.random_weights(X.shape[1])
         # Set up previous iteration error
         last_error = float('inf')
+        min_error = float('inf')
         
         # Gradient Ascent - loop until early termination or max iterations
         for i in range(self.max_iterations):
@@ -158,6 +147,7 @@ class LogisticRegression:
             error = self.squared_error(Y_encoded - probs)
             # error = self.cross_entropy(Y_encoded, probs)
             error_diff = abs(error - last_error)
+            min_error = min(error_diff, min_error)
             # print('Error:', error, '\tDiff:', error_diff)
             # Check for early termination
             if error_diff < self.epsilon:
@@ -176,6 +166,7 @@ class LogisticRegression:
 
         # Set our trained weights
         self.weights = W
+        # print('Smallest error diff:', min_error)
 
     def compute_probabilities(self, X):
         """
