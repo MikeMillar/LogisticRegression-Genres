@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import librosa
 import matplotlib.pyplot as plt
+import scipy.stats as st
 
 def tempo_demo(y, sr):
     tempo, beat_times = librosa.beat.beat_track(y=y, sr=sr, units='time')
@@ -119,6 +120,116 @@ def pitch_chroma_demo(y, sr):
     plt.tight_layout()
     plt.show()
 
+def random_search_demo(df: pd.DataFrame):
+
+    # Find paramters that perform best for each metric
+    best_balanced = df.iloc[np.argmax(df['bal_acc'], axis=0)]
+    best_precision = df.iloc[np.argmax(df['precision'], axis=0)]
+    best_recall = df.iloc[np.argmax(df['recall'], axis=0)]
+    best_f1 = df.iloc[np.argmax(df['f1'], axis=0)]
+    print('Best Balanced Accuracy:\n', best_balanced)
+    print('Best Precision:\n', best_precision)
+    print('Best Recall:\n', best_recall)
+    print('Best F1:\n', best_f1)    
+
+    # 3D graph by balanced accuracy
+    fig = plt.figure(figsize=(8,8))
+    ax = fig.add_subplot(111, projection='3d')
+    scatter = ax.scatter(df['learning_rate'], df['tolerance'], df['penalty'], c=df['bal_acc'])
+    ax.set_xlabel('Learning Rate (eta)')
+    ax.set_ylabel('Tolerance (epsilon)')
+    ax.set_zlabel('Regularization Penalty')
+    plt.title('Balanced Accuracy')
+    fig.colorbar(scatter, ax=ax)
+    plt.show()
+
+    # 3D graph by precision
+    fig = plt.figure(figsize=(8,8))
+    ax = fig.add_subplot(111, projection='3d')
+    scatter = ax.scatter(df['learning_rate'], df['tolerance'], df['penalty'], c=df['precision'])
+    ax.set_xlabel('Learning Rate (eta)')
+    ax.set_ylabel('Tolerance (epsilon)')
+    ax.set_zlabel('Regularization Penalty')
+    plt.title('Precision')
+    fig.colorbar(scatter, ax=ax)
+    plt.show()
+
+    # 3D graph by recall
+    fig = plt.figure(figsize=(8,8))
+    ax = fig.add_subplot(111, projection='3d')
+    scatter = ax.scatter(df['learning_rate'], df['tolerance'], df['penalty'], c=df['recall'])
+    ax.set_xlabel('Learning Rate (eta)')
+    ax.set_ylabel('Tolerance (epsilon)')
+    ax.set_zlabel('Regularization Penalty')
+    plt.title('Recall')
+    fig.colorbar(scatter, ax=ax)
+    plt.show()
+
+    # 3D graph by f1 score
+    fig = plt.figure(figsize=(8,8))
+    ax = fig.add_subplot(111, projection='3d')
+    scatter = ax.scatter(df['learning_rate'], df['tolerance'], df['penalty'], c=df['f1'])
+    ax.set_xlabel('Learning Rate (eta)')
+    ax.set_ylabel('Tolerance (epsilon)')
+    ax.set_zlabel('Regularization Penalty')
+    plt.title('F1 Score')
+    fig.colorbar(scatter, ax=ax)
+    plt.show()
+
+def model_comparison():
+    # Load the data
+    df = pd.read_csv('data/result/_scores2.csv')
+    # Group by model
+    gfs = df.groupby('model')
+    # Seperate groups
+    my_lr = gfs.get_group('My_LR')
+    sk_lr = gfs.get_group('SK_LR')
+    sk_rf = gfs.get_group('SK_RF')
+    sk_gnb = gfs.get_group('SK_GNB')
+    sk_gb = gfs.get_group('SK_GB')
+    sk_svm = gfs.get_group('SK_SVM')
+
+    names = ['My_LR', 'SK_LR', 'SK_RF', 'SK_GNB', 'SK_GB', 'SK_SVM']
+    # model,bal_acc,adj_bal_acc,precision,recall,f1_score
+    
+    # Balanced accuracy stats
+    # intervals
+    my_lr_interval = st.t.interval(confidence=0.95, df=len(my_lr)-1, loc=np.mean(my_lr['bal_acc']), scale=st.sem(my_lr['bal_acc']))
+    sk_lr_interval = st.t.interval(confidence=0.95, df=len(sk_lr)-1, loc=np.mean(sk_lr['bal_acc']), scale=st.sem(sk_lr['bal_acc']))
+    sk_rf_interval = st.t.interval(confidence=0.95, df=len(sk_rf)-1, loc=np.mean(sk_rf['bal_acc']), scale=st.sem(sk_rf['bal_acc']))
+    sk_gnb_interval = st.t.interval(confidence=0.95, df=len(sk_gnb)-1, loc=np.mean(sk_gnb['bal_acc']), scale=st.sem(sk_gnb['bal_acc']))
+    sk_gb_interval = st.t.interval(confidence=0.95, df=len(sk_gb)-1, loc=np.mean(sk_gb['bal_acc']), scale=st.sem(sk_gb['bal_acc']))
+    sk_svm_interval = st.t.interval(confidence=0.95, df=len(sk_svm)-1, loc=np.mean(sk_svm['bal_acc']), scale=st.sem(sk_svm['bal_acc']))
+    # interval mins-maxs
+    int_mins = [my_lr_interval[0], sk_lr_interval[0], sk_rf_interval[0], sk_gnb_interval[0], sk_gb_interval[0], sk_svm_interval[0]]
+    int_maxs = [my_lr_interval[1], sk_lr_interval[1], sk_rf_interval[1], sk_gnb_interval[1], sk_gb_interval[1], sk_svm_interval[1]]
+    # value min-max
+    mins = [np.min(my_lr['bal_acc']), np.min(sk_lr['bal_acc']), np.min(sk_rf['bal_acc']), np.min(sk_gnb['bal_acc']), np.min(sk_gb['bal_acc']), np.min(sk_svm['bal_acc'])]
+    maxs = [np.max(my_lr['bal_acc']), np.max(sk_lr['bal_acc']), np.max(sk_rf['bal_acc']), np.max(sk_gnb['bal_acc']), np.max(sk_gb['bal_acc']), np.max(sk_svm['bal_acc'])]
+    print('Statistics for _scores2.csv:')
+    print(f'My_LR: interval={my_lr_interval}, min={mins[0]}, max={maxs[0]}')
+    print(f'SK_LR: interval={sk_lr_interval}, min={mins[1]}, max={maxs[1]}')
+    print(f'SK_RF: interval={sk_rf_interval}, min={mins[2]}, max={maxs[2]}')
+    print(f'SK_GNB: interval={sk_gnb_interval}, min={mins[3]}, max={maxs[3]}')
+    print(f'SK_GB: interval={sk_gb_interval}, min={mins[4]}, max={maxs[4]}')
+    print(f'SK_SVM: interval={sk_svm_interval}, min={mins[5]}, max={maxs[5]}')
+    # create data
+    ba_df = pd.DataFrame({'open': int_mins,
+                          'close': int_maxs,
+                          'high': maxs,
+                          'low': mins},
+                          index=names)
+    
+    plt.figure(figsize=(6,6))
+    plt.bar(ba_df.index, ba_df['close']-ba_df['open'], width=0.3, bottom=ba_df['open'], color='b')
+    plt.bar(ba_df.index, ba_df['high']-ba_df['close'], width=0.03, bottom=ba_df['close'], color='b')
+    plt.bar(ba_df.index, ba_df['low']-ba_df['open'], width=0.03, bottom=ba_df['open'], color='b')
+    plt.xticks(rotation=30, ha='right')
+    plt.xlabel('Model')
+    plt.ylabel('Balanced Accuracy')
+    plt.title('ML Model Comparision for Genre Classification')
+    plt.show()
+
 
 if __name__ == '__main__':
     # Load the demo song
@@ -148,3 +259,6 @@ if __name__ == '__main__':
 
     # Demo Pitch Chroma
     pitch_chroma_demo(y, sr)
+
+    # model comparison
+    model_comparison()
