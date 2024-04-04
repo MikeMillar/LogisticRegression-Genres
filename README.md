@@ -31,5 +31,21 @@ This project contains many parts which can be run independantly, or together. Th
     - flatten: Boolean to indicate if the vector/matrices should be flattened in the output dataframe/csv
     - hop_size: Hop sized use by librosa during audio extraction.
     - mfcc_count: How many MFCC coefficients to be extracted (13-20)
-- `logreg.py`: This file contains the functions for the implementation of the logistic regression model.
+
+    To use `extract.py`, follow the steps below:
+    1. Decide which features you want to extract and uncomment the features you want, and comment the features you don't want.
+    2. Update either the train_dir or test_dir directory paths, then in the main method update which one is used. 
+    3. Rename the output file at the bottom of main.
+    4. Run the program with `python extract.py`
+    5. Let program run, then check the output file.
+- `logreg.py`: This file contains the functions for the implementation of the logistic regression model. Code from this file is run from the `music.py` file, but has 3 may ways of interacting with.
+    1. Initialization and hyper-parameter setup. `lr = LogisticRegression()`. You can use the default parameter values defined in the `__init__` method, or pass them as arguments.
+    2. Training of the model using the fit method. `lr.fit(X, Y)`
+    3. Predicting classifications with the predict method. `pred = lr.predict(X)`
+
+    It has several hyper-parameters that you can specify:
+    - `learning_rate`: The rate at which the model progresses towards convergence during training.
+    - `epsilon`: The error difference before early training termination.
+    - `penalty`: The regularization pentaly used during training.
+    - `max_interations`: The maximum training iterations before termination.
 - `utils.py`: This file contains useful utility functions that are used throughout the program.
