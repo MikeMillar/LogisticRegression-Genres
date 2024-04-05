@@ -105,9 +105,6 @@ class LogisticRegression:
         """
         return np.sum(np.square(errors)) / errors.shape[0]
 
-    def cross_entropy(self, Y, probs):
-        return -np.mean(np.sum(Y * np.log(probs + 0.0001), axis=1))
-
     def fit(self, X, Y) -> None:
         """
         Trains the logistic regression model by computing a set of
