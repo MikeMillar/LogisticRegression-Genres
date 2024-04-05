@@ -29,6 +29,8 @@ split_size = 0.2                                # Testing validation split size 
 variance = 0.85                                 # Percent of variance to keep when reducing dimensionality
 save_output = False                             # Indicates that the output should be saved to file
 reduce = False                                   # Set to True if you want PCA dimensionality reduction
+total_runs = 1                                  # Total number of times to run each defined model
+score_file = 'data/result/_scores.csv'
 # Gradient Ascent variables
 learning_rate = 0.003705                        # Learning rate used for gradient ascent
 penalty = 0.673836                              # Regularization factor used for gradient ascent
@@ -345,8 +347,8 @@ if __name__ == "__main__":
         svm.SVC()
     ]
 
-    score_filename = 'data/result/_scores2.csv'
-    for _ in range(100):
+    score_filename = score_file
+    for _ in range(total_runs):
         X_train, X_test, Y_train, Y_test, Z = load_prep_scale(train_path, test_path, split_size, variance)
         metrics = run_models(names, models, X_train, X_test, Y_train, Y_test, Z)
         score_file = open(score_filename, 'a')

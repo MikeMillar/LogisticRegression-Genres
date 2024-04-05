@@ -47,5 +47,33 @@ This project contains many parts which can be run independantly, or together. Th
     - `learning_rate`: The rate at which the model progresses towards convergence during training.
     - `epsilon`: The error difference before early training termination.
     - `penalty`: The regularization pentaly used during training.
-    - `max_interations`: The maximum training iterations before termination.
-- `utils.py`: This file contains useful utility functions that are used throughout the program.
+    - `max_iterations`: The maximum training iterations before termination.
+- `utils.py`: This file contains a handful of useful utility functions that are used throughout the program.
+    - `matrix_to_columns(matrix, label)`: Takes an numpy array matrix and turns it into a dictionary of columns which can be loaded into a pandas dataframe.
+    - `trim_matrices(container, flat)`: Takes a container of matrices and trims them to be all have the same width. If the container instead contians vectors or arrays, then flatten should be set to True.
+    - `get_filename(path)`: Extracts just the filename from a full path string.
+- `reportutils.py`: This is a file that was used to collect and graph statistics from various data collected during the development and testing of the model. You can comment/uncomment which methods you want to see run. Some methods may need you specify directory/file paths.
+- `music.py`: This is the main script of the program. It is used to run model or models for comparison. It has a variety of parameters that can be specified, and some code may need to be commented in/out depending on what portions of the application you want to run. The variables to modify are:
+    - train_path: Path to the file of training and cross-validation data CSV file.
+    - test_path: Path to the kaggle competition data CSV file. This file does not have label data.
+    - save_path: Path to the directory that you want the output files to be saved in.
+    - split_size: The percent size of the validation set from training data.
+    - variance: The percent variance to keep during PCA reduction.
+    - save_output: Boolean indicating if the application should produce an output file of predictions from the test data.
+    - reduce: Boolean indicating if PCA reduction should be performed.
+    - learning_rate: Learning rate of the logistic regression model
+    - epsilon: Error difference value for early termination.
+    - penalty: Regularization penalty used during training.
+    - max_iterations: Max iterations that can occur during training.
+    - total_runs: The total number of times to run the defined models.
+    - score_file: The path and filename of a CSV file to save the results of the models.
+
+    To run the file:
+    1. Set the variables to your data path and to your liking.
+    2. In the main method, define the names of the methods you want to run. There are 6 names pre-defined (My_LR, SK_LR, SK_RF, SK_GNB, SK_GB, SK_SVM).
+    3. Below where you defined the names, initialize the models in the `models` array. Optionally you can specify the variables of the sklearn models or leave them as they are already defined.
+    4. Caveats with the score file:
+        - If you do not want the score file to be saved, comment out the lines at the bottom of main that `open`, `write` and `close` the file. The `get_model_stats` method will print the results of the models to the console either way.
+        - If the score file doesn't already exist with a defined header, the created score file will be missing a header. You can edit the score file and add a header as the first line, which should be the following string: `model,bal_acc,adj_bal_acc,precision,recall,f1_score`.
+        - The score file is what is used in the `model_comparison` method in `reportutils.py`.
+    5. In a console run using `python music.py`
