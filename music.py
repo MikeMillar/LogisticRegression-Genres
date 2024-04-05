@@ -255,6 +255,21 @@ def train_predict_other(model, name, X_train, X_test, Y_train, Y_test):
     return get_model_stats(Y_values, Y_test, lr_pred)
 
 def run_models(names, models, X_train, X_test, Y_train, Y_test, Z):
+    """
+    Runs the models defined in the names and models parameters with the given data.
+
+    Args:
+        names (list): List of model names
+        models (list): List of initialized ML models
+        X_train (dataframe): Training data
+        X_test (dataframe): Cross-validation data
+        Y_train (array): Training data labels
+        Y_test (array): Cross-validation data labels
+        Z (dataframe): Kaggle competition testing data
+
+    Returns:
+        tuple(list, list, list, list, list): Tuple of metrics of each run models performance.
+    """
     bal_accs = []
     adj_bal_accs = []
     precisions = []
@@ -281,6 +296,16 @@ def run_models(names, models, X_train, X_test, Y_train, Y_test, Z):
 
 # def random_search(X_train, X_test, Y_train, Y_test, iters):
 def random_search(iters):
+    """
+    Randomized the hyper-parameters of the logistic regression model and collects 
+    all the metrics from the training/cross-validation process.
+
+    Args:
+        iters (int): Number of iterations to test the model with.
+
+    Returns:
+        (dict): Dictionary of the model parameters and their statistics
+    """
     # X_train, X_test, Y_train, Y_test, Z = load_prep_scale(train_path, test_path, split_size, variance)
     # Randomized hyper parameters
     etas = []
