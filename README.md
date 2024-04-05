@@ -74,3 +74,7 @@ This project contains many parts which can be run independantly, or together. Th
         - The score file is what is used in the `model_comparison` method in `reportutils.py`.
     5. In a console run using `python music.py`
 - `graphs/`: Directory containing all of the statistical graphs used during the evaluation and reporting of this project.
+
+# Kaggle Results
+Best submission to the Kaggle competition was:
+- April 4, 2024 with accuracy 52%
