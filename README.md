@@ -14,12 +14,8 @@ The next few sections will step through the setup, configuration options, to act
     2b. Activate virtual environment with `source .venv/bin/activate`
 3. Use pip to install required libraries with `pip install -r requirements.txt`
 
-### Configuration
-This application has several configuration options which are outlined below. \
-TODO
-
-### Starting the application
-TODO
+### Configuration and Running the Application
+The configuration of this project is done by modify variables and certain lines of code within the python files themselves. If you are interested in extracting features from music files, see `extract.py` in the file manifest. If you already have extracted feature data and want to run the model(s), see `music.py` in the file manifest. All information about running the application is defined in the file manifest for both `extract.py` and `music.py`.
 
 # File Manifest
 This project contains many parts which can be run independantly, or together. The following manifest will outline the different files in the application. This will include detailed descriptions of each file, which will detail their functions and use cases.
@@ -77,3 +73,4 @@ This project contains many parts which can be run independantly, or together. Th
         - If the score file doesn't already exist with a defined header, the created score file will be missing a header. You can edit the score file and add a header as the first line, which should be the following string: `model,bal_acc,adj_bal_acc,precision,recall,f1_score`.
         - The score file is what is used in the `model_comparison` method in `reportutils.py`.
     5. In a console run using `python music.py`
+- `graphs/`: Directory containing all of the statistical graphs used during the evaluation and reporting of this project.
